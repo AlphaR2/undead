@@ -2,11 +2,10 @@ use anchor_lang::prelude::*;
 use crate::{state::*, constants::*};
 use ephemeral_rollups_sdk::anchor::commit;
 use ephemeral_rollups_sdk::ephem::commit_accounts;
-use session_keys::{SessionToken, Session};
+
 
 #[commit]
-#[derive(Accounts, Session)]
-#[instruction(player: Pubkey, position: u32)]
+#[derive(Accounts)]
 pub struct UpdatePosition<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
@@ -20,18 +19,11 @@ pub struct UpdatePosition<'info> {
         bump = gamer_profile.bump,
     )]
     pub gamer_profile: Account<'info, GamerProfile>,
-
-    #[session(
-        signer = signer,
-        authority = player.key()
-    )]
-    pub session_token: Option<Account<'info, SessionToken>>,
 }
 
 impl<'info> UpdatePosition<'info> {
     pub fn update_position(
         &mut self,
-        player: Pubkey,
         position: u32,
     ) -> Result<()> {
         let profile = &mut self.gamer_profile;

@@ -84,6 +84,8 @@ pub enum RustUndeadError {
     InvalidClassRarity,
   #[msg("Image generation failed")]
     ImageGenerationFailed,
+		 #[msg("Invalid Score")]
+    InvalidScore,
 
 		//user enums
 	#[msg("Username already choosen")]

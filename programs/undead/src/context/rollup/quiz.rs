@@ -1,16 +1,16 @@
 use anchor_lang::prelude::*;
-use crate::{state::*, constants::*, error::*, events::*};
+use crate::{state::*, constants::*, error::*};
 use ephemeral_rollups_sdk::anchor::commit;
 use ephemeral_rollups_sdk::ephem::commit_accounts;
-use session_keys::{SessionToken, Session};
+
 
 #[commit]
-#[derive(Accounts, Session)]
-#[instruction(player: Pubkey, score: u8, world_id: [u8; 32])]
+#[derive(Accounts)]
+#[instruction(world_id: [u8; 32])]
 pub struct SubmitQuiz<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
-
+    
     /// CHECK: Player account
     pub player: AccountInfo<'info>,
 
@@ -27,25 +27,18 @@ pub struct SubmitQuiz<'info> {
         bump,
     )]
     pub undead_world: Account<'info, UndeadWorld>,
-
-    #[session(
-        signer = signer,
-        authority = player.key()
-    )]
-    pub session_token: Option<Account<'info, SessionToken>>,
 }
 
 impl<'info> SubmitQuiz<'info> {
     pub fn submit_quiz(
         &mut self,
-        player: Pubkey,
         score: u8,
         world_id: [u8; 32],
     ) -> Result<()> {
-        require!(score <= 100, RustUndeadError::InvalidScore);
-
         let profile = &mut self.gamer_profile;
         let world = &mut self.undead_world;
+        require!(score <= 100, RustUndeadError::InvalidScore);
+        require!(world_id ==world.world_id, RustUndeadError::InvalidRoomId);
 
         // Update quiz stats
         profile.total_quiz_score = profile.total_quiz_score.saturating_add(score as u32);
@@ -55,7 +48,7 @@ impl<'info> SubmitQuiz<'info> {
         // Update world leaderboard if top score
         if profile.undead_score > world.highest_undead_score_average {
             world.highest_undead_score_average = profile.undead_score;
-            world.top_commander = player;
+            world.top_commander = self.player.key();
         }
 
         msg!("Quiz submitted: Score {}, Average {}", score, profile.undead_score);

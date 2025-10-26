@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::{state::*, constants::*, error::*};
+use crate::{state::*, constants::*};
 
 /* Initialize Game Config - One time setup by admin */
 #[derive(Accounts)]
@@ -28,6 +28,7 @@ impl<'info> InitializeGameConfig<'info> {
       self.game_config.set_inner(
         GameConfig { 
           authority: self.authority.key(), 
+          total_warriors: 0,
           released_chapters: released_chapters, 
           boss_battles_enabled: false, 
           paused: false, 

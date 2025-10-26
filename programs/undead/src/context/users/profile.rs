@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
 use crate::{state::*, constants::*};
-use session_keys::{SessionToken, Session};
+
 
 /*Gaming Profile that is delegated to the ER for Updates */
-#[derive(Accounts, Session)]
+#[derive(Accounts)]
 pub struct BuildGamingProfile<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
@@ -19,12 +19,6 @@ pub struct BuildGamingProfile<'info> {
         bump
     )]
     pub gamer_profile: Account<'info, GamerProfile>,
-    
-    #[session(
-        signer = signer,
-        authority = player.key()
-    )]
-    pub session_token: Option<Account<'info, SessionToken>>,
     pub system_program: Program<'info, System>,
 }
 
@@ -42,9 +36,7 @@ impl<'info> BuildGamingProfile<'info> {
             gamer_profile.character_class = character_class;
             gamer_profile.current_chapter = 0;
             gamer_profile.chapters_completed = 0;
-            gamer_profile.total_distance = 0;
             gamer_profile.current_position = 0;
-            gamer_profile.total_playtime = 0;
             gamer_profile.total_battles_won = 0;
             gamer_profile.total_battles_lost = 0;
             gamer_profile.total_battles_fought = 0;

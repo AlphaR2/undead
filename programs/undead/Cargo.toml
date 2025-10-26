@@ -20,10 +20,10 @@ idl-build = ["anchor-lang/idl-build"]
 
 
 [dependencies]
-anchor-lang = { version = "=0.31.1", features = ["init-if-needed"] }
-session-keys = { version = "=2.0.5", features = ["no-entrypoint"] }
-ephemeral-rollups-sdk = { version = "=0.2.4", features = ["anchor"] }
-ephemeral-vrf-sdk = { version = "=0.1.2", features = ["anchor"] }
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+ephemeral-rollups-sdk = { version = "0.2.4", features = ["anchor"] }
+ephemeral-vrf-sdk = { version = "0.1.2", features = ["anchor"] }
+solana-program = "2.3.0"
 
 [dev-dependencies]
 solana-sdk = "1.18.26"

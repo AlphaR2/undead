@@ -6,14 +6,13 @@ pub mod helpers;
 pub mod context;
 
 pub use {state::*, error::RustUndeadError, context::*, helpers::*, constants::*};
-pub use session_keys::{ session_auth_or, Session, SessionError, SessionToken };
 use ephemeral_vrf_sdk::anchor::vrf;
 use ephemeral_vrf_sdk::instructions::{create_request_randomness_ix, RequestRandomnessParams};
 use ephemeral_vrf_sdk::types::SerializableAccountMeta;
 
 use ephemeral_rollups_sdk::anchor::ephemeral;
 
-declare_id!("rst6o6UC9WGZn9fTjicAatTqyRFVKBE2c6th6AYAUs4");
+declare_id!("undWHawzrspG9R65bd6V2UxbEw8REc8yWtx4DQ6F3e9");
 
 #[ephemeral]
 #[program]
@@ -27,11 +26,6 @@ pub mod rust_undead {
         ctx.accounts.initialize_game_config(released_chapters, &ctx.bumps)
     }
 
-    #[session_auth_or(
-        ctx.accounts.user_profile.owner == ctx.accounts.player.key() || 
-        ctx.accounts.user_profile.owner == Pubkey::default(),
-        RustUndeadError::NotAuthorized
-    )]
     pub fn build_user_profile(
         ctx: Context<BuildUserProfile>,
         username: String,
@@ -40,11 +34,7 @@ pub mod rust_undead {
         ctx.accounts.build_user_profile(username, persona, &ctx.bumps)
     }
 
-    #[session_auth_or(
-        ctx.accounts.gamer_profile.owner == ctx.accounts.player.key() || 
-        ctx.accounts.gamer_profile.owner == Pubkey::default(),
-        RustUndeadError::NotAuthorized
-    )]
+  
     pub fn build_gaming_profile(
         ctx: Context<BuildGamingProfile>,
         character_class: WarriorClass,
@@ -61,10 +51,7 @@ pub mod rust_undead {
 
     // ============== WARRIOR CREATION ==============
     
-    #[session_auth_or(
-        ctx.accounts.user_profile.owner == ctx.accounts.player.key(),
-        RustUndeadError::NotAuthorized
-    )]
+   
     pub fn create_warrior(
         ctx: Context<CreateWarrior>,
         name: String, 
@@ -78,7 +65,7 @@ pub mod rust_undead {
         
         let player_key = ctx.accounts.player.key();
         let warrior_key = ctx.accounts.warrior.key();
-        let user_profile = ctx.accounts.user_profile;
+        let user_profile = &mut ctx.accounts.user_profile;
 
         user_profile.warriors = user_profile.warriors.saturating_add(1);
 
@@ -141,29 +128,11 @@ pub mod rust_undead {
             }
         }
 
-        ctx.accounts.config.total_warriors = ctx.accounts.config.total_warriors.saturating_add(1);
+        ctx.accounts.game_config.total_warriors = ctx.accounts.game_config.total_warriors.saturating_add(1);
 
         let user_profile = &mut ctx.accounts.user_profile;
-        user_profile.warriors_created = user_profile.warriors_created.saturating_add(1);
-        user_profile.total_points = user_profile.total_points.saturating_add(100);
-        
-        let user_achievements = &mut ctx.accounts.user_achievements;
-        if user_achievements.owner == Pubkey::default() {
-            user_achievements.owner = player_key;
-            user_achievements.overall_achievements = AchievementLevel::None;
-            user_achievements.warrior_achivement = AchievementLevel::Bronze;
-            user_achievements.winner_achievement = AchievementLevel::None;
-            user_achievements.battle_achievement = AchievementLevel::None;
-            user_achievements.first_warrior_date = Clock::get()?.unix_timestamp;
-            user_achievements.bump = ctx.bumps.user_achievements;
-            user_achievements.warrior_achivement = calculate_warrior_achievement(user_profile.warriors_created);
-        } else {
-            user_achievements.warrior_achivement = calculate_warrior_achievement(user_profile.warriors_created);
-        }
-        
-        user_profile.total_points = user_profile.total_points.saturating_add(100);
-        user_achievements.overall_achievements = calculate_overall_achievement(user_profile.total_points);
-
+        user_profile.warriors = user_profile.warriors.saturating_add(1);
+      
         // Request VRF if enabled (will override fallback stats via callback)
         if !no_vrf {
             let ix = create_request_randomness_ix(RequestRandomnessParams { 
@@ -183,18 +152,6 @@ pub mod rust_undead {
             ctx.accounts.invoke_signed_vrf(&ctx.accounts.signer.to_account_info(), &ix)?;
         }
 
-        emit!(WariorCreatedEvent{
-            name: ctx.accounts.warrior.name.clone(),
-            class: ctx.accounts.warrior.warrior_class,
-            attack: ctx.accounts.warrior.base_attack, 
-            defense: ctx.accounts.warrior.base_defense, 
-            knowledge: ctx.accounts.warrior.base_knowledge,
-            image_url: ctx.accounts.warrior.image_uri.clone(),
-            image_rarity: ctx.accounts.warrior.image_rarity,
-            current_hp: ctx.accounts.warrior.current_hp,
-            max_hp: ctx.accounts.warrior.max_hp
-        });
-       
         Ok(())
     }
 
@@ -259,10 +216,7 @@ pub mod rust_undead {
 
     // ============== DELEGATION INSTRUCTIONS ==============
     
-    #[session_auth_or(
-        true,
-        RustUndeadError::NotAuthorized
-    )]
+
     pub fn game_profile_to_rollup(
         ctx: Context<GamingDelegate>,
         player: Pubkey,
@@ -270,10 +224,7 @@ pub mod rust_undead {
         ctx.accounts.game_profile_to_rollup(player)
     }
 
-    #[session_auth_or(
-        true,
-        RustUndeadError::NotAuthorized
-    )]
+    
     pub fn world_to_rollup(
         ctx: Context<WorldDelegate>,
         world_id: [u8; 32],
@@ -283,55 +234,53 @@ pub mod rust_undead {
 
     // ============== ER GAMEPLAY INSTRUCTIONS ==============
     
-    #[session_auth_or(
-        ctx.accounts.gamer_profile.owner == ctx.accounts.player.key(),
-        RustUndeadError::NotAuthorized
-    )]
+    
     pub fn start_chapter(
         ctx: Context<StartChapter>,
-        player: Pubkey,
         chapter_number: u16,
         world_id: [u8; 32],
     ) -> Result<()> {
-        ctx.accounts.start_chapter(player, chapter_number, world_id)
+        ctx.accounts.start_chapter(chapter_number, world_id)
     }
 
-    #[session_auth_or(
-        ctx.accounts.gamer_profile.owner == ctx.accounts.player.key(),
-        RustUndeadError::NotAuthorized
-    )]
+   
     pub fn update_position(
         ctx: Context<UpdatePosition>,
-        player: Pubkey,
         position: u32,
     ) -> Result<()> {
-        ctx.accounts.update_position(player, position)
+        ctx.accounts.update_position(position)
     }
 
-    #[session_auth_or(
-        ctx.accounts.gamer_profile.owner == ctx.accounts.player.key(),
-        RustUndeadError::NotAuthorized
-    )]
+    
     pub fn submit_quiz(
         ctx: Context<SubmitQuiz>,
-        player: Pubkey,
         score: u8,
         world_id: [u8; 32],
     ) -> Result<()> {
-        ctx.accounts.submit_quiz(player, score, world_id)
+        ctx.accounts.submit_quiz( score, world_id)
     }
 }
 
 
 #[vrf]
-#[derive(Accounts, Session)]
-#[instruction(name: String, class: WarriorClass)]
+#[derive(Accounts)]
+#[instruction(name: String)]
 pub struct CreateWarrior<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
     /// CHECK: This is verified and is player account 
     pub player: AccountInfo<'info>,
+
+    /// CHECK: This is verified and is the game account 
+     pub authority: Signer<'info>,
+
+     #[account(
+        seeds = [GAME_CONFIG, authority.key().as_ref()],
+        bump = game_config.bump,
+        constraint = game_config.authority == authority.key() @ RustUndeadError::NotAuthorized
+    )]
+    pub game_config: Account<'info, GameConfig>,
 
     #[account(
         init,
@@ -363,13 +312,6 @@ pub struct CreateWarrior<'info> {
         address = ephemeral_vrf_sdk::consts::DEFAULT_QUEUE
     )]
     pub oracle_queue: AccountInfo<'info>,
-
-    #[session(
-        signer = signer,
-        authority = player.key() 
-    )]
-    pub session_token: Option<Account<'info, SessionToken>>,
-    
     pub system_program: Program<'info, System>,
 }
 

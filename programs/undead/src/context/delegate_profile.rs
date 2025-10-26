@@ -2,10 +2,10 @@ use anchor_lang::prelude::*;
 use crate::constants::*;
 use ephemeral_rollups_sdk::anchor::delegate;
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
-use session_keys::{SessionToken, Session};
+
 
 #[delegate]
-#[derive(Accounts, Session)]
+#[derive(Accounts)]
 #[instruction(player: Pubkey)]
 pub struct GamingDelegate<'info> {
     #[account(mut)]
@@ -19,12 +19,6 @@ pub struct GamingDelegate<'info> {
         bump,
     )]
     pub user_game_profile: AccountInfo<'info>,
-
-    #[session(
-      signer = signer,
-      authority = signer.key() 
-    )]
-    pub session_token: Option<Account<'info, SessionToken>>,
 }
 
 impl<'info> GamingDelegate<'info> {

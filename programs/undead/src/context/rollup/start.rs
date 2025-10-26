@@ -1,12 +1,12 @@
 use anchor_lang::prelude::*;
-use crate::{state::*, constants::*, error::*, events::*};
+use crate::{state::*, constants::*, error::*};
 use ephemeral_rollups_sdk::anchor::commit;
 use ephemeral_rollups_sdk::ephem::commit_accounts;
-use session_keys::{SessionToken, Session};
+
 
 #[commit]
-#[derive(Accounts, Session)]
-#[instruction(player: Pubkey, chapter_number: u16, world_id: [u8; 32])]
+#[derive(Accounts)]
+#[instruction(world_id: [u8; 32])]
 pub struct StartChapter<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
@@ -27,25 +27,19 @@ pub struct StartChapter<'info> {
         bump = undead_world.bump,
     )]
     pub undead_world: Account<'info, UndeadWorld>,
-
-  #[session(
-      signer = signer,
-      authority = player.key() 
-    )]
-    pub session_token: Option<Account<'info, SessionToken>>,
 }
 
 impl<'info> StartChapter<'info> {
     pub fn start_chapter(
         &mut self,
-        player: Pubkey,
         chapter_number: u16,
         world_id: [u8; 32],
     ) -> Result<()> {
         let profile = &mut self.gamer_profile;
         let world = &mut self.undead_world;
 
-      
+        require!(world_id == world.world_id, RustUndeadError::InvalidRoomId);
+
         // Set current chapter
         profile.current_chapter = chapter_number;
         profile.current_position = 0;
@@ -53,8 +47,6 @@ impl<'info> StartChapter<'info> {
         // Increment active players
         world.active_players = world.active_players.saturating_add(1);
         
-        msg!("Player {} started Chapter {}", player, chapter_number);
-
         // Commit changes to rollup
         commit_accounts(
             &self.signer,

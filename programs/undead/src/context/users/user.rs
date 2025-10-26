@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 use crate::{state::*, constants::*, error::*};
-use session_keys::{SessionToken, Session};
 
-#[derive(Accounts, Session)]
+
+#[derive(Accounts)]
 #[instruction(username: String)]
 pub struct BuildUserProfile<'info> {
     #[account(mut)]
@@ -29,11 +29,6 @@ pub struct BuildUserProfile<'info> {
     )]
     pub user_profile: Account<'info, UserProfile>,
     
-    #[session(
-        signer = signer,
-        authority = player.key()
-    )]
-    pub session_token: Option<Account<'info, SessionToken>>,
     pub system_program: Program<'info, System>,
 }
 

@@ -2,10 +2,9 @@ use anchor_lang::prelude::*;
 use crate::constants::*;
 use ephemeral_rollups_sdk::anchor::delegate;
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
-use session_keys::{SessionToken, Session};
 
 #[delegate]
-#[derive(Accounts, Session)]
+#[derive(Accounts)]
 #[instruction(world_id: [u8; 32])]
 pub struct WorldDelegate<'info> {
     #[account(mut)]
@@ -19,12 +18,6 @@ pub struct WorldDelegate<'info> {
         bump,
     )]
     pub undead_world: AccountInfo<'info>,
-
-    #[session(
-        signer = signer,
-        authority = signer.key() 
-    )]
-    pub session_token: Option<Account<'info, SessionToken>>,
 }
 
 impl<'info> WorldDelegate<'info> {

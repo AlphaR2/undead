@@ -5,6 +5,7 @@ use anchor_lang::prelude::*;
 pub struct GameConfig {
     pub authority: Pubkey,
     pub released_chapters: u8,
+    pub total_warriors: u32,
     pub boss_battles_enabled: bool,
     pub paused: bool,
     pub bump: u8,

@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-undead = "HXwE5wXerCzjgNEZx6yhA4EZ3qMU3xpQhr2xxu41stUC"
+undead = "undWHawzrspG9R65bd6V2UxbEw8REc8yWtx4DQ6F3e9"
 
 [registry]
 url = "https://api.apr.dev"
